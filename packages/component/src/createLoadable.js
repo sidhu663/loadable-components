@@ -312,7 +312,7 @@ function createLoadable({
         } = this.props
         const { error, loading, result } = this.state
 
-        if (options.suspense) {
+        if (options.suspense && loading) {
           const cachedPromise = this.getCache() || this.loadAsync()
           if (cachedPromise.status === STATUS_PENDING) {
             throw this.loadAsync()

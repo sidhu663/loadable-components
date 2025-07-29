@@ -359,6 +359,55 @@ describe('#lazy', () => {
 
     await wait(() => expect(container).toHaveTextContent('loaded'))
   })
+
+  it('should not suspend when component is preloaded with lazy', async () => {
+    const ContentComponent = () => 'loaded'
+    const ContentComponentModule = { default: ContentComponent }
+
+    // Simulate a preloaded component via chunkExtractor and loadableReady
+    // This replicates the transformed output of the babel plugin constructor
+    const Component = lazy({
+      chunkName() { return 'chunkName' },
+      isReady() { return true },
+      requireSync() { return ContentComponentModule },
+      requireAsync() { return Promise.resolve(ContentComponentModule) },
+      resolve() { return ContentComponent },
+    })
+
+    const { container } = render(
+      <React.Suspense fallback="progress">
+        <Component />
+      </React.Suspense>,
+    )
+    expect(container).toHaveTextContent('loaded')
+    expect(container).not.toHaveTextContent('progress')
+  })
+
+
+  it('should suspend when component is not preloaded with lazy', async () => {
+    const ContentComponent = () => 'loaded'
+    const ContentComponentModule = { default: ContentComponent }
+
+    // Simulate a non-preloaded component via chunkExtractor and loadableReady
+    // This replicates the transformed output of the babel plugin constructor
+    const Component = lazy({
+      chunkName() { return 'chunkName' },
+      isReady() { return false },
+      requireSync() { return ContentComponentModule },
+      requireAsync() { return Promise.resolve(ContentComponentModule) },
+      resolve() { return ContentComponent },
+    })
+
+    const { container } = render(
+      <React.Suspense fallback="progress">
+        <Component />
+      </React.Suspense>,
+    )
+    expect(container).toHaveTextContent('progress')
+    expect(container).not.toHaveTextContent('loaded')
+    await wait(() => expect(container).toHaveTextContent('loaded'))
+    expect(container).not.toHaveTextContent('progress')
+  })
 })
 
 describe('#loadable.lib', () => {
